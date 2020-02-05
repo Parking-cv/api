@@ -4,18 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
-func main() {
-
-	http.HandleFunc("/entry", handleEntry)
-	http.HandleFunc("/exit", handleExit)
-
-	_ = http.ListenAndServe(":3000", nil)
-}
-
 type Event struct {
-	Timestamp string `json:"timestamp"`
+	Timestamp time.Time `json:"timestamp"`
+	PiId      uint32    `json:"pi_id"`
+	Location  string    `json:"location"`
 }
 
 func handleEntry(res http.ResponseWriter, req *http.Request) {
