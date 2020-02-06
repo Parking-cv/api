@@ -11,9 +11,10 @@ type Event struct {
 	Timestamp time.Time `json:"timestamp"`
 	PiId      uint32    `json:"pi_id"`
 	Location  string    `json:"location"`
+	Image     string    `json:"filename"`
 }
 
-func handleEntry(res http.ResponseWriter, req *http.Request) {
+func analyzeEvent(res http.ResponseWriter, req *http.Request) {
 	entry := new(Event)
 
 	err := json.NewDecoder(req.Body).Decode(entry)
@@ -22,17 +23,27 @@ func handleEntry(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(res, "Entry: %s", entry.Timestamp)
-}
-
-func handleExit(res http.ResponseWriter, req *http.Request) {
-	exit := new(Event)
-
-	err := json.NewDecoder(req.Body).Decode(exit)
+	//err = DB.Ping()
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	_, _ = fmt.Fprintf(res, "Exit: %s", exit.Timestamp)
+	_, _ = fmt.Fprintf(res, "Entry: %s", entry.Timestamp)
+}
+
+type TestEvent struct {
+	Message string `json:"message"`
+}
+
+func testRoute(res http.ResponseWriter, req *http.Request) {
+	msg := new(TestEvent)
+
+	err := json.NewDecoder(req.Body).Decode(msg)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, _ = fmt.Fprintf(res, "You sent: %s", msg.Message)
 }
