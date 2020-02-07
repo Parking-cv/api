@@ -21,8 +21,7 @@ func main() {
 	router.Use(middleware.Logger)
 
 	router.Route("/", func(index chi.Router) {
-		index.Post("/test", testRoute)
-		index.Post("/frame", analyzeEvent)
+		index.Post("/frames", receiveFrames)
 	})
 
 	_ = http.ListenAndServe(":3000", router)
