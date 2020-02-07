@@ -22,6 +22,7 @@ func main() {
 
 	router.Route("/", func(index chi.Router) {
 		index.Post("/test", testRoute)
+		index.Post("/frame", analyzeEvent)
 	})
 
 	_ = http.ListenAndServe(":3000", router)
