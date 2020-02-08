@@ -4,25 +4,43 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"net/http"
+	"time"
 )
 
-//var DB *sql.DB
-
 func main() {
-
-	//db, err := sql.Open("postgres", os.Getenv("POSTGRES_URI"))
-	//if err != nil {
-	//	panic("Cannot connect to database. Check your connection URI and try again.")
-	//}
-	//
-	//DB = db
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
-	router.Route("/", func(index chi.Router) {
-		index.Post("/frames", receiveFrames)
-	})
+	router.Mount("/api", api())
+	router.Mount("/pi", piRouter())
 
 	_ = http.ListenAndServe(":3000", router)
+}
+
+// Router for requests from picameras
+func piRouter() http.Handler {
+	router := chi.NewRouter()
+	router.Use(PiAuth)
+
+	router.Post("/frames", receiveFrames)
+
+	return router
+}
+
+// Router for interface rest api
+func api() http.Handler {
+	router := chi.NewRouter()
+
+	router.Use(middleware.Timeout(60 * time.Second))
+	router.Get("/test", testRoute)
+
+	return router
+}
+
+func PiAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify Pi's JWT
+		next.ServeHTTP(w, r)
+	})
 }

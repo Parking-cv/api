@@ -2,56 +2,69 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"parking-cv/server/src/valet"
+	"time"
 )
 
-func receiveFrames(res http.ResponseWriter, req *http.Request) {
-	err := req.ParseMultipartForm(32 << 20)
+// Global count of temporary folders
+var FOLDERNUM int = 0
+
+func receiveFrames(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		// Error parsing form
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fhs := req.MultipartForm.File
-	for key, fh := range fhs {
-		for idx, f := range fh {
-			file, err := f.Open()
-			if err != nil {
-				// Error reading file
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			defer file.Close()
+	frames := make(map[time.Time]*multipart.FileHeader)
 
-			newFile, err := os.OpenFile(
-				fmt.Sprintf("img/upload-%s-%d-%s", key, idx, f.Filename),
-				os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
-
-			if err != nil {
-				// Error creating file
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			defer newFile.Close()
-
-			bytes, err := ioutil.ReadAll(file)
-			if err != nil {
-				// Error reading file
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			_, err = newFile.Write(bytes)
-			if err != nil {
-				// Error writing file
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
+	fhs := r.MultipartForm.File
+	for timestamp, fh := range fhs {
+		if len(fh) != 0 {
+			http.Error(w, "Only one file should be attached to each timestamp.", http.StatusBadRequest)
+			return
 		}
+
+		ts, err := time.Parse(time.RFC3339, timestamp)
+		if err != nil {
+			// Error parsing timestamp
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		frames[ts] = fh[0]
 	}
 
-	_, _ = fmt.Fprintf(res, "Saved files")
+	dir := fmt.Sprintf("tmp-%d", FOLDERNUM)
+	FOLDERNUM += 1
+
+	_ = os.Mkdir(dir, 0666)
+
+	filenames, err := valet.ReadFiles(dir, frames)
+	if err != nil {
+		// Error reading files
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Process image in separate thread
+	err = valet.Detect(filenames)
+	if err != nil {
+		// Error during detection
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		// Delete the temporary folder
+		_ = os.RemoveAll(dir)
+		FOLDERNUM -= 1
+	}
+
+	_, _ = fmt.Fprintf(w, "Processed files")
+}
+
+func testRoute(w http.ResponseWriter, _ *http.Request) {
+	_, _ = fmt.Fprintf(w, "Hello there!")
 }
