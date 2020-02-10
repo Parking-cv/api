@@ -81,7 +81,7 @@ func Detect(filenames []string) error {
 
 	go func() {
 		// detect.py accepts a list of frames sorted by time
-		cmd := exec.Command("script.py", strings.Join(filenames, " "))
+		cmd := exec.Command("Detector.py", strings.Join(filenames, " "))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
