@@ -38,10 +38,10 @@ func ReadFiles(dir string, frames map[time.Time]*multipart.FileHeader) ([]string
 		}
 		defer file.Close()
 
-		filename := fmt.Sprintf(dir, timestamp.Format(time.RFC3339), fh.Filename)
+		filename := fmt.Sprintf("%s/%s-%s", dir, timestamp.Format(time.RFC3339), fh.Filename)
 		filenames[timestamp] = filename
 
-		newFile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+		newFile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
 			return nil, err
 		}
@@ -78,10 +78,15 @@ func ReadFiles(dir string, frames map[time.Time]*multipart.FileHeader) ([]string
 func Detect(filenames []string) error {
 
 	errChannel := make(chan error)
+	args := append([]string{"src/valet/Detector.py"}, strings.Join(filenames, " "))
 
 	go func() {
+		// TODO set these environment variables somewhere else
+		os.Setenv("PYTHONPATH", "/Users/davidwiles/PycharmProjects/parking-cv-python/venv/lib/python3.7/site-packages/:/Users/davidwiles/PycharmProjects/parking-cv-python")
+		os.Setenv("PYTHON_BIN","/Users/davidwiles/PycharmProjects/parking-cv-python/venv/bin/python")
+		pythonBin := os.Getenv("PYTHON_BIN")
 		// detect.py accepts a list of frames sorted by time
-		cmd := exec.Command("Detector.py", strings.Join(filenames, " "))
+		cmd := exec.Command(pythonBin, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 

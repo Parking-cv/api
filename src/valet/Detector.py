@@ -8,7 +8,6 @@ import imutils
 import numpy as np
 from scipy.spatial import distance as dist
 
-
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
            "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
@@ -16,12 +15,6 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 
 
 class CentroidTracker:
-    """
-    Patrick's centroid tracker object.
-
-    Creates a map of an object's centroids, which is retained through several frames
-    in order to track the movement of the object
-    """
 
     def __init__(self, maxDisappeared=50, maxDistance=50):
         self.nextObjectID = 0
@@ -99,9 +92,6 @@ class CentroidTracker:
 
 
 class TrackableObject:
-    """
-    Object containing properties of a trackable object (car, etc)
-    """
 
     def __init__(self, objectID, centroid=None):
         self.objectID = objectID
@@ -112,35 +102,30 @@ class TrackableObject:
         self.centroids.append(centroid)
 
 
-# TODO refactor to analyze a set of frames
 def monitor(files):
+    # Maintain a count of cars, motorbikes, or boats seen in these frames
+    # although only one stream of video is analyzed, there may be multiple cars
+    count = 0
     centroidTracker = CentroidTracker(maxDisappeared=40, maxDistance=50)
-    numFrames = 0
-    trackers = []
     trackableObjects = {}
     confidenceLevel = 0.9
     consider = ['car', 'motorbike', 'boat']
-    trainedModel = {}
-    net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+    trainedModel = cv2.dnn.readNetFromCaffe('assets/deploy.prototxt', 'assets/deploy.caffemodel')
 
+    # Iterate over each frame passed to the script
     for file in files:
-        frame = open(file, 'rw')
-
+        frame = cv2.imread(file)
         frame = imutils.resize(frame, width=400)
         (height, width) = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         rects = []
-
         trackers = []
-
         blob = cv2.dnn.blobFromImage(
             cv2.resize(frame, (300, 300)),
             0.007843,
             (300, 300),
             127.5
         )
-
         trainedModel.setInput(blob)
         detections = trainedModel.forward()
 
@@ -158,17 +143,16 @@ def monitor(files):
                     tracker.start_track(rgb, rect)
 
                     trackers.append(tracker)
-
-        # else:
-        #     for tracker in trackers:
-        #         tracker.update(rgb)
-        #         pos = tracker.get_position()
-        #         rects.append(
-        #             (int(pos.left()),
-        #              int(pos.top()),
-        #              int(pos.right()),
-        #              int(pos.bottom()))
-        #         )
+            else:
+                for tracker in trackers:
+                    tracker.update(rgb)
+                    pos = tracker.get_position()
+                    rects.append(
+                        (int(pos.left()),
+                         int(pos.top()),
+                         int(pos.right()),
+                         int(pos.bottom()))
+                    )
 
         cv2.line(frame, (width // 2, 0), (width // 2, height), (0, 0, 255), 2)
 
@@ -185,23 +169,27 @@ def monitor(files):
 
                 if not object.counted:
                     if direction < -20 and centroid[0] < width // 2:
-                        return 1
+                        count += 1
                         object.counted = True
-
                     elif direction > 20 and centroid[0] > width // 2:
-                        return 0
+                        count -= 1
                         object.counted = True
 
             trackableObjects[objectID] = object
+
+    # This line will only be reached if we did not detect an entry or exit
+    return count
 
 
 def main():
     # Pass filenames to detector via args
     parser = argparse.ArgumentParser()
-    parser.add_argument(name='files', type=str, nargs='+')
+    parser.add_argument('files', nargs='+')
     args = parser.parse_args()
 
-    return monitor(args['files'])
+    # return monitor(args.files)
+    # testing only
+    print(monitor(args.files))
 
 
 if __name__ == '__main__':

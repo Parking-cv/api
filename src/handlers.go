@@ -24,7 +24,7 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 
 	fhs := r.MultipartForm.File
 	for timestamp, fh := range fhs {
-		if len(fh) != 0 {
+		if len(fh) != 1 {
 			http.Error(w, "Only one file should be attached to each timestamp.", http.StatusBadRequest)
 			return
 		}
@@ -41,7 +41,20 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 	dir := fmt.Sprintf("tmp-%d", FOLDERNUM)
 	FOLDERNUM += 1
 
-	_ = os.Mkdir(dir, 0666)
+	err = os.Mkdir(dir, 0777)
+	if (err != nil) {
+		// Error creating directory
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+    err = os.Chmod(dir, 0777)
+	if (err != nil) {
+		// Error setting directory permissions
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	defer cleanUp(dir)
 
 	filenames, err := valet.ReadFiles(dir, frames)
 	if err != nil {
@@ -56,13 +69,15 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 		// Error during detection
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else {
-		// Delete the temporary folder
-		_ = os.RemoveAll(dir)
-		FOLDERNUM -= 1
 	}
-
 	_, _ = fmt.Fprintf(w, "Processed files")
+}
+
+// Remove all temporary directories and files
+func cleanUp(dir string) error {
+	err := os.RemoveAll(dir)
+	FOLDERNUM -= 1
+	return err
 }
 
 func testRoute(w http.ResponseWriter, _ *http.Request) {
