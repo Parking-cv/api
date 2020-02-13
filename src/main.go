@@ -4,10 +4,16 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"net/http"
+	"parking-cv/server/src/valet"
 	"time"
 )
 
 func main() {
+
+	err := valet.InitializeMongoClient()
+	if err != nil {
+		panic(err)
+	}
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)

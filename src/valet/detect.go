@@ -1,7 +1,12 @@
 package valet
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"io/ioutil"
 	"mime/multipart"
 	"os"
@@ -10,6 +15,19 @@ import (
 	"strings"
 	"time"
 )
+
+var client *mongo.Client
+
+func InitializeMongoClient() error {
+	c, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGO_URI")))
+	if err != nil {
+		return err
+	}
+
+	client = c
+
+	return nil
+}
 
 // For sorting by time
 type timeSlice []time.Time
@@ -75,22 +93,44 @@ func ReadFiles(dir string, frames map[time.Time]*multipart.FileHeader) ([]string
 	return sortedFilenames, nil
 }
 
-func Detect(filenames []string) error {
-
+func Detect(timestamp time.Time, filenames []string) error {
 	errChannel := make(chan error)
 	args := append([]string{"src/valet/Detector.py"}, strings.Join(filenames, " "))
 
 	go func() {
-		// TODO set these environment variables somewhere else
-		os.Setenv("PYTHONPATH", "/Users/davidwiles/PycharmProjects/parking-cv-python/venv/lib/python3.7/site-packages/:/Users/davidwiles/PycharmProjects/parking-cv-python")
-		os.Setenv("PYTHON_BIN","/Users/davidwiles/PycharmProjects/parking-cv-python/venv/bin/python")
-		pythonBin := os.Getenv("PYTHON_BIN")
 		// detect.py accepts a list of frames sorted by time
-		cmd := exec.Command(pythonBin, args...)
-		cmd.Stdout = os.Stdout
+		// The number of cars in or out of the lot are returned
+		// via sout, which will be redirected to storage in mongoDB
+		cmd := exec.Command("python", args...)
+		stdout, err := cmd.StdoutPipe()
 		cmd.Stderr = os.Stderr
 
-		errChannel <- cmd.Run()
+		if err != nil {
+			errChannel <- err
+			return
+		}
+
+		if err := cmd.Start(); err != nil {
+			errChannel <- err
+		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(stdout)
+		if err != nil {
+			errChannel <- err
+			return
+		}
+		res := buf.String()
+
+		collection := client.Database("Diddle_North").Collection("Log")
+		_, err = collection.InsertOne(context.Background(), bson.M{
+			"timestamp": timestamp,
+			"entries":   res,
+		})
+		if err != nil {
+			errChannel <- err
+			return
+		}
 	}()
 
 	return <-errChannel

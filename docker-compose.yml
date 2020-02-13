@@ -6,10 +6,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      POSTGRES_URI:
+      MONGO_URI: "mongodb://admin:password@localhost"
 
   database:
-    image: postgres:11.6-alpine
+    image: mongo:4.2-bionic
     environment:
-      POSTGRES_USER:
-      POSTGRES_PASSWORD:
+	  MONGO_INITDB_ROOT_USERNAME: "admin"
+	  MONGO_INITDB_ROOT_PASSWORD: "password"
+	  MONGO_INITDB_DATABASE: "Diddle_North"
+	volumes:
+	  - mongo_data:./mongo-init.js:/data/parking-lot
+
+volumes:
+  mongo_data:

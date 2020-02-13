@@ -21,6 +21,8 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 	}
 
 	frames := make(map[time.Time]*multipart.FileHeader)
+	var firstTimeStamp time.Time
+	tsSet := false
 
 	fhs := r.MultipartForm.File
 	for timestamp, fh := range fhs {
@@ -30,6 +32,10 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ts, err := time.Parse(time.RFC3339, timestamp)
+		if tsSet == false {
+			firstTimeStamp = ts
+			tsSet = true
+		}
 		if err != nil {
 			// Error parsing timestamp
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -42,13 +48,13 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 	FOLDERNUM += 1
 
 	err = os.Mkdir(dir, 0777)
-	if (err != nil) {
+	if err != nil {
 		// Error creating directory
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-    err = os.Chmod(dir, 0777)
-	if (err != nil) {
+	err = os.Chmod(dir, 0777)
+	if err != nil {
 		// Error setting directory permissions
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,7 +70,7 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process image in separate thread
-	err = valet.Detect(filenames)
+	err = valet.Detect(firstTimeStamp, filenames)
 	if err != nil {
 		// Error during detection
 		http.Error(w, err.Error(), http.StatusInternalServerError)
