@@ -1,12 +1,6 @@
 version: '3'
 
 services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      MONGO_URI: "mongodb://admin:password@localhost"
 
   database:
     image: mongo:4.2-bionic
@@ -15,7 +9,14 @@ services:
 	  MONGO_INITDB_ROOT_PASSWORD: "password"
 	  MONGO_INITDB_DATABASE: "Diddle_North"
 	volumes:
-	  - mongo_data:./mongo-init.js:/data/parking-lot
+	  - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
 
-volumes:
-  mongo_data:
+  app:
+    depends_on:
+	  - database
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      MONGO_URI: "mongodb://admin:password@localhost/Diddle_North"
+

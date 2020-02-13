@@ -21,7 +21,7 @@ func main() {
 	router.Mount("/api", api())
 	router.Mount("/pi", piRouter())
 
-	_ = http.ListenAndServe(":3000", router)
+	_ = http.ListenAndServe(":4321", router)
 }
 
 // Router for requests from picameras
