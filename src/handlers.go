@@ -31,7 +31,7 @@ func receiveFrames(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ts, err := time.Parse(time.RFC3339, timestamp)
+		ts, err := time.Parse(time.RFC3339Nano, timestamp)
 		if tsSet == false {
 			firstTimeStamp = ts
 			tsSet = true
