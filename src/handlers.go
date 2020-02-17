@@ -5,8 +5,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"parking-cv/server/src/valet"
 	"time"
+	"valet"
 )
 
 // Global count of temporary folders
