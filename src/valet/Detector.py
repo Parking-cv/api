@@ -8,7 +8,7 @@ import imutils
 import numpy as np
 from scipy.spatial import distance as dist
 
-CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+CONSIDER_CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
            "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
            "sofa", "train", "tvmonitor"]
@@ -93,9 +93,9 @@ class CentroidTracker:
 
 class TrackableObject:
 
-    def __init__(self, objectID, centroid=None):
+    def __init__(self, objectID):
         self.objectID = objectID
-        self.centroids = [centroid]
+        self.centroids = []
         self.counted = False
 
     def appendCentroid(self, centroid):
@@ -110,7 +110,7 @@ def monitor(files):
     trackableObjects = {}
     confidenceLevel = 0.9
     consider = ['car', 'motorbike', 'boat']
-    trainedModel = cv2.dnn.readNetFromCaffe('assets/deploy.prototxt', 'assets/deploy.caffemodel')
+    trainedModel = cv2.dnn.readNetFromCaffe('../../assets/deploy.prototxt', '../../assets/deploy.caffemodel')
 
     # Iterate over each frame passed to the script
     for file in files:
@@ -160,7 +160,6 @@ def monitor(files):
 
         for (objectID, centroid) in objects.items():
             object = trackableObjects.get(objectID, None)
-
             if object is None:
                 object = TrackableObject(objectID)
             else:
