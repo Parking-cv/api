@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"valet"
+	"parking-cv/src/valet"
 )
 
 // Global count of temporary folders

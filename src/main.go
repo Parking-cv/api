@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"net/http"
 	"time"
-	"valet"
+	"parking-cv/src/valet"
 )
 
 func main() {

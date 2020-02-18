@@ -5,11 +5,9 @@ services:
   database:
     image: mongo:4.2-bionic
     environment:
-	  MONGO_INITDB_ROOT_USERNAME: "admin"
-	  MONGO_INITDB_ROOT_PASSWORD: "password"
-	  MONGO_INITDB_DATABASE: "Diddle_North"
-	volumes:
-	  - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      MONGO_INITDB_ROOT_USERNAME: "admin"
+      MONGO_INITDB_ROOT_PASSWORD: "password"
+      MONGO_INITDB_DATABASE: "Diddle_North"
 
   app:
     depends_on:
