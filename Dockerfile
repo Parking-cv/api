@@ -1,8 +1,8 @@
 # Builder container 
 FROM golang:1.13-buster as builder
 RUN mkdir /build
-ADD ./src /go/src/parking-cv/server/src
-WORKDIR /go/src/parking-cv/server
+ADD ./src /go/src/parking-cv/src
+WORKDIR /go/src/parking-cv
 
 # Install dependencies
 RUN go get -u github.com/go-chi/chi
@@ -30,7 +30,7 @@ COPY ./requirements.txt /requirements.txt
 RUN pip install -r requirements.txt
 
 # Copy files from builder container
-COPY --from=builder /go/src/parking-cv/server/build/main /app/main
+COPY --from=builder /go/src/parking-cv/build/main /app/main
 COPY ./assets /app/assets
 WORKDIR /app
 
