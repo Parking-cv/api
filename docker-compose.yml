@@ -1,15 +1,20 @@
 version: '3'
 
 services:
+
+  database:
+    image: mongo:4.2-bionic
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "admin"
+      MONGO_INITDB_ROOT_PASSWORD: "password"
+      MONGO_INITDB_DATABASE: "Diddle_North"
+
   app:
+    depends_on:
+	  - database
     build: .
     ports:
       - "3000:3000"
     environment:
-      POSTGRES_URI:
+      MONGO_URI: "mongodb://admin:password@localhost/Diddle_North"
 
-  database:
-    image: postgres:11-alpine
-    environment:
-      POSTGRES_USER:
-      POSTGRES_PASSWORD:
